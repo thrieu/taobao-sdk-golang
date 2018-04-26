@@ -29,7 +29,7 @@ type Params struct {
 	v           string // api版本 2.0
 	sign_method string // 签名的摘要算法md5
 	// method      string // api接口名称
-	// session     string // 是否需要授权
+	session     string // 是否需要授权
 }
 
 const (
@@ -55,6 +55,7 @@ func (this *Auth) request(params map[string]string, methodType string) (respMap 
 		timestamp:   time.Now().Format("2006-01-02 15:04:05"),
 		v:           V,
 		sign_method: SIGN_METHOD,
+		session:     params["session"],
 	}
 
 	urlParams := url.Values{}
@@ -63,6 +64,9 @@ func (this *Auth) request(params map[string]string, methodType string) (respMap 
 	urlParams.Add("timestamp", args.timestamp)
 	urlParams.Add("v", args.v)
 	urlParams.Add("sign_method", args.sign_method)
+	if args.session != "" {
+		urlParams.Add("session", args.session)
+	}
 
 	for k, v := range params {
 		urlParams.Add(k, v)
@@ -75,6 +79,7 @@ func (this *Auth) request(params map[string]string, methodType string) (respMap 
 	}
 	defer resp.Body.Close()
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println(string(bodyBytes))
 	err = json.Unmarshal(bodyBytes, &respMap)
 	if err != nil {
 		err = errors.New(fmt.Sprintf("%s %s", err.Error(), string(bodyBytes)))
@@ -93,6 +98,9 @@ func convert(params Params) map[string]string {
 	for i := 0; i < vt.NumField(); i++ {
 		k := vt.Field(i).Name
 		v := vv.FieldByName(k)
+		if k == "session" && v.String() == "" {
+			continue
+		}
 		paramsMap[k] = v.String()
 	}
 	return paramsMap
